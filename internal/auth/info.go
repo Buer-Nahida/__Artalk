@@ -35,6 +35,10 @@ func GetProviderInfo(conf *config.Config, providers []goth.Provider) []AuthProvi
 		if title == "Microsoftonline" {
 			title = "Microsoft"
 		}
+		// Patch for QQ
+		if title == "Auth0" {
+			title = "QQ"
+		}
 		info = append(info, AuthProviderInfo{
 			Name:  name,
 			Label: title,

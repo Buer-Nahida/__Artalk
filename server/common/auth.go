@@ -46,15 +46,18 @@ var ErrTokenUserNotFound = fmt.Errorf("user not found")
 var ErrTokenInvalidFromDate = fmt.Errorf("token is invalid starting from a certain date")
 
 func GetTokenByReq(c *fiber.Ctx) string {
-	token := c.Query("token")
-	if token == "" {
-		token = c.FormValue("token")
+	token := c.Get(fiber.HeaderAuthorization)
+	token = strings.TrimPrefix(token, "Bearer ")
+	if token != "" {
+		return token
 	}
-	if token == "" {
-		token = c.Get(fiber.HeaderAuthorization)
-		token = strings.TrimPrefix(token, "Bearer ")
+
+	token = c.Query("token")
+	if token != "" {
+		return token
 	}
-	return token
+
+	return c.FormValue("token")
 }
 
 func GetJwtDataByReq(app *core.App, c *fiber.Ctx) (jwtCustomClaims, error) {

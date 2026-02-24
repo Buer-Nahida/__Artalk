@@ -2,6 +2,7 @@ package notify_pusher
 
 import (
 	"html"
+	"strings"
 	"time"
 
 	"github.com/artalkjs/artalk/v2/internal/entity"
@@ -9,6 +10,7 @@ import (
 	"github.com/artalkjs/artalk/v2/internal/log"
 	"github.com/artalkjs/artalk/v2/internal/notify_pusher/sender"
 	"github.com/artalkjs/artalk/v2/internal/template"
+	"github.com/artalkjs/artalk/v2/internal/utils"
 )
 
 func (pusher *NotifyPusher) multiPush(comment *entity.Comment, pComment *entity.Comment) {
@@ -78,10 +80,30 @@ func (pusher *NotifyPusher) sendWebhook(subject string, body string, comment *en
 		pCommentCooked = pusher.dao.CookComment(pComment)
 	}
 
+	// Extra for Discord
+	extra := map[string]string{}
+
+	// Replier
+	replier := pusher.dao.CookCommentForEmail(comment)
+	extra["replier_nick"] = replier.Nick
+	extra["replier_email"] = replier.Email
+	extra["replier_avatar"] = "https://www.gravatar.com/avatar/" + utils.GetMD5Hash(strings.ToLower(replier.Email)) + "?d=mp&s=240"
+	extra["content"] = replier.ContentRaw
+
+	// Parent
+	if pComment != nil && !pComment.IsEmpty() {
+		parent := pusher.dao.CookCommentForEmail(pComment)
+		extra["parent_nick"] = parent.Nick
+		extra["parent_email"] = parent.Email
+		extra["parent_avatar"] = "https://www.gravatar.com/avatar/" + utils.GetMD5Hash(strings.ToLower(parent.Email)) + "?d=mp&s=240"
+		extra["parent_content"] = parent.ContentRaw
+	}
+
 	sender.SendWebHook(pusher.conf.WebHook.URL, &sender.NotifyWebHookReqBody{
 		NotifySubject: subject,
 		NotifyBody:    body,
 		Comment:       pusher.dao.CookComment(comment),
 		ParentComment: pCommentCooked,
+		Extra:         extra,
 	})
 }
